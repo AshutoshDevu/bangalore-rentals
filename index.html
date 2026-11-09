@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rental Homes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--ink:#22262B;--mute:#68707C;--line:#E4E7EB;--soft:#F4F5F7;--go:#17705E;--heart:#D6304B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181C;--ink:#ECEEF1;--mute:#A0A8B3;--line:#30353C;--soft:#22262C;--go:#5CC9B0;--heart:#FF6B83}}
+:root[data-theme="dark"]{--bg:#15181C;--ink:#ECEEF1;--mute:#A0A8B3;--line:#30353C;--soft:#22262C;--go:#5CC9B0;--heart:#FF6B83}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.45 "Hind",system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--go)}
+:focus-visible{outline:2px solid var(--go);outline-offset:2px}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px 64px}
+
+.top{display:flex;align-items:center;gap:28px;padding:20px 0 0;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:6px 0 10px;font-size:20px;font-weight:500;color:var(--mute);cursor:pointer}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab b{font-weight:400;font-size:17px;margin-left:3px}
+
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:16px 0 6px}
+.filters select,.filters input{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px 5px;font-size:16px;max-width:100%}
+.filters input{flex:1 1 180px;min-width:150px}
+.status{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0 18px;color:var(--mute);font-size:16px}
+.linkbtn{background:none;border:0;padding:0;color:var(--go);text-decoration:underline;cursor:pointer;font-size:16px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:34px 24px}
+.card{position:relative}
+.open{display:block;width:100%;background:none;border:0;padding:0;text-align:left;cursor:pointer}
+.pic{display:block;aspect-ratio:3/2;background:var(--soft);border-radius:6px;overflow:hidden}
+.pic img{width:100%;height:100%;object-fit:cover;display:block}
+.nopic{display:grid;place-items:center;height:100%;color:var(--mute);font-size:15px}
+.rent{display:block;font-size:25px;font-weight:600;line-height:1.1;margin-top:11px}
+.rent small{font-size:15px;font-weight:400;color:var(--mute)}
+.what{display:block;font-weight:500;margin-top:3px}
+.place,.money{display:block;line-height:1.3;font-size:16px}
+.money{color:var(--mute);margin-top:2px}
+.who{margin:7px 0 0;font-size:15px;line-height:1.35;color:var(--mute);overflow-wrap:anywhere}
+.who a{font-weight:500;text-decoration:none;white-space:nowrap}
+.who a:hover{text-decoration:underline}
+.heart{position:absolute;right:8px;top:8px;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#22262B;cursor:pointer;display:grid;place-items:center;padding:0}
+.heart svg,.like svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9}
+.heart[aria-pressed=true],.like[aria-pressed=true]{color:var(--heart)}
+.heart[aria-pressed=true]{color:#D6304B}
+.heart[aria-pressed=true] svg,.like[aria-pressed=true] svg{fill:currentColor}
+.empty{padding:60px 0;text-align:center;color:var(--mute)}
+
+dialog{border:0;padding:0;background:var(--bg);color:var(--ink);width:min(1100px,calc(100vw - 32px));max-height:calc(100vh - 32px);border-radius:8px;overflow:hidden}
+dialog::backdrop{background:rgba(10,12,15,.72)}
+.detail{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,1fr);height:min(740px,calc(100vh - 32px))}
+.gal{background:#101215;display:flex;flex-direction:column;min-width:0;min-height:0}
+.stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;color:#AAB}
+.stage img,.stage video{max-width:100%;max-height:100%;display:block}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:56px;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:26px;cursor:pointer}
+.prev{left:0}.next{right:0}
+.strip{display:flex;gap:4px;padding:6px;overflow-x:auto;flex:none}
+.strip:empty{display:none}
+.strip button{flex:none;width:62px;height:48px;padding:0;border:2px solid transparent;background:#2a2d33;cursor:pointer;position:relative}
+.strip button[aria-current=true]{border-color:#fff}
+.strip img{width:100%;height:100%;object-fit:cover;display:block}
+.strip span{position:absolute;inset:0;display:grid;place-items:center;color:#fff;background:rgba(0,0,0,.3);font-size:15px}
+.info{padding:22px 24px;overflow-y:auto;position:relative}
+.x{position:absolute;right:12px;top:10px;background:none;border:0;font-size:28px;line-height:1;cursor:pointer;padding:2px 8px}
+.info h2{font-size:30px;font-weight:600;line-height:1.1;margin:0;padding-right:36px}
+.info h2 small{font-size:16px;font-weight:400;color:var(--mute)}
+.info p{margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.btn,.like{display:inline-flex;align-items:center;gap:6px;border-radius:6px;padding:8px 14px 6px;font-weight:500;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:none;color:var(--ink)}
+.btn.main{background:var(--go);border-color:var(--go);color:var(--bg)}
+.contact{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.contact p+p{margin-top:5px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin:14px 0 0}
+dt{color:var(--mute)}dd{margin:0}
+.note{background:var(--soft);border-radius:6px;padding:9px 12px 7px;margin:14px 0 0;font-size:16px}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;color:var(--go)}
+.post{white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;margin:9px 0 0}
+
+@media (max-width:760px){
+  .wrap{padding:0 16px 48px}
+  .filters select{flex:1 1 calc(50% - 4px);min-width:0}
+  .filters input{flex-basis:100%}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}
+  .detail{grid-template-columns:minmax(0,1fr);grid-template-rows:42dvh minmax(0,1fr);height:100dvh}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top" role="tablist">
+    <button class="tab" role="tab" id="tabAll" aria-selected="true" type="button">All homes <b id="nAll"></b></button>
+    <button class="tab" role="tab" id="tabFav" aria-selected="false" type="button">Favourites <b id="nFav"></b></button>
+  </div>
+  <div class="filters" id="filters">
+    <select id="rent" aria-label="Maximum rent"></select>
+    <select id="dep" aria-label="Maximum deposit"></select>
+    <select id="size" aria-label="Size"></select>
+    <select id="furn" aria-label="Furnishing"></select>
+    <select id="area" aria-label="Area"></select>
+    <select id="chat" aria-label="Source chat"></select>
+    <input id="q" type="search" placeholder="Search" aria-label="Search all listings">
+  </div>
+  <div class="status">
+    <span id="count" aria-live="polite"></span>
+    <span>
+      <button class="linkbtn" id="clear" type="button" hidden>Clear filters</button>
+      <label>&nbsp; Sort <select id="sort" style="background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 5px 1px">
+        <option value="new">Newest</option><option value="rent">Lowest rent</option><option value="dep">Lowest deposit</option>
+      </select></label>
+    </span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+</div>
+
+<dialog id="dlg" aria-label="Home details">
+  <div class="detail">
+    <div class="gal"><div class="stage" id="stage"></div><div class="strip" id="strip"></div></div>
+    <div class="info" id="info"></div>
+  </div>
+</dialog>
+
+<script src="listings.js"></script>
+<script>
+(function(){
+const D=window.LISTINGS,Z=window.ZONES,$=i=>document.getElementById(i);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr=n=>Number(n).toLocaleString('en-IN');
+const money=n=>n>=100000?(n/100000).toString()+'L':(n/1000).toString()+'k';
+const bhk=b=>b==null?'Flat':b==='rk'?'1 RK':b==='room'?'Room':b+' BHK';
+const furnL={semi:'semi-furnished',full:'fully furnished'};
+const title=l=>l.bhk==='room'?'Furnished room in a shared flat':bhk(l.bhk)+(l.furn?' '+furnL[l.furn]:'')+(l.bhk==null?', size not stated':'')+(l.type==='lease'?' on lease':'');
+const fmtP=p=>'+91 '+p.slice(0,5)+' '+p.slice(5);
+const wa=p=>'https://wa.me/91'+p;
+const thumb=m=>'media/t/'+m.f.replace(/\.mp4$/,'.jpg'),full=m=>'media/'+m.f;
+const HEART='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.4-9.3C1.4 8 3.3 4.8 6.6 4.8c2.2 0 3.9 1.2 5.4 3.1 1.5-1.9 3.2-3.1 5.4-3.1 3.3 0 5.2 3.2 4 6.4-1.9 4.7-9.4 9.3-9.4 9.3z"/></svg>';
+
+let favs=new Set();
+try{favs=new Set(JSON.parse(localStorage.getItem('rental-favourites')||'[]'))}catch(e){}
+function saveFavs(){try{localStorage.setItem('rental-favourites',JSON.stringify([...favs]))}catch(e){}}
+
+const opt=(v,t)=>`<option value="${esc(v)}">${esc(t)}</option>`;
+$('rent').innerHTML=opt('','Any rent')+[15000,18000,20000,22000,25000,30000,35000,50000].map(n=>opt(n,'Rent up to ₹'+money(n))).join('');
+$('dep').innerHTML=opt('','Any deposit')+[40000,50000,60000,75000,100000,200000].map(n=>opt(n,'Deposit up to ₹'+money(n))).join('');
+$('size').innerHTML=opt('','Any size')+[['rk','1 RK'],['1','1 BHK'],['2','2 BHK'],['3','3 BHK'],['5','5 BHK'],['room','Room in shared flat'],['none','Size not stated']].map(a=>opt(a[0],a[1])).join('');
+$('furn').innerHTML=opt('','Any furnishing')+opt('semi','Semi-furnished')+opt('full','Fully furnished')+opt('none','Not stated');
+const locsOf=z=>[...new Set(D.filter(l=>l.zone===z).map(l=>l.loc))].sort();
+$('area').innerHTML=opt('','All areas')+Object.keys(Z).filter(z=>D.some(l=>l.zone===z)).map(z=>`<optgroup label="${esc(Z[z])}">${opt('z:'+z,'All of this area')}${locsOf(z).map(l=>opt('l:'+l,l)).join('')}</optgroup>`).join('');
+$('chat').innerHTML=opt('','All chats')+[...new Set(D.map(l=>l.source))].sort().map(s=>opt(s,s)).join('');
+
+let tab='all';
+const fields=['rent','dep','size','furn','area','chat','q'];
+function match(l){
+  const r=$('rent').value,d=$('dep').value,s=$('size').value,f=$('furn').value,a=$('area').value,c=$('chat').value,q=$('q').value.trim().toLowerCase();
+  if(r&&l.rent>+r)return false;
+  if(d&&l.dep!=null&&l.dep>+d)return false;
+  if(s&&(s==='none'?l.bhk!=null:String(l.bhk)!==s))return false;
+  if(f&&(f==='none'?l.furn!=null:l.furn!==f))return false;
+  if(a&&(a[0]==='z'?l.zone!==a.slice(2):l.loc!==a.slice(2)))return false;
+  if(c&&l.source!==c)return false;
+  if(q&&!(l.place+' '+l.text+' '+l.source+' '+l.contact+' '+l.phone).toLowerCase().includes(q))return false;
+  return true;
+}
+const cmp={new:(a,b)=>b.last-a.last,rent:(a,b)=>a.rent-b.rent,dep:(a,b)=>(a.dep==null?1e12:a.dep)-(b.dep==null?1e12:b.dep)};
+function moneyLine(l){
+  const b=[l.dep==null?'Deposit not stated':'Deposit ₹'+money(l.dep)];
+  if(l.broker)b.push('brokerage '+(l.broker==='Applicable'?'applies':l.broker));
+  return b.join(', ');
+}
+function card(l){
+  const num=l.owner||l.phone;
+  return `<article class="card">
+    <button class="open" type="button" data-id="${l.id}">
+      <span class="pic">${l.media.length?`<img loading="lazy" src="${thumb(l.media[0])}" alt="">`:'<span class="nopic">No photos</span>'}</span>
+      <span class="rent">₹${inr(l.rent)} <small>a month</small></span>
+      <span class="what">${esc(title(l))}</span>
+      <span class="place">${esc(l.place)}</span>
+      <span class="money">${esc(moneyLine(l))}</span>
+    </button>
+    <p class="who">${esc(l.source)}<br>${l.owner?'Owner ':esc(l.contact)+' '}<a href="${wa(num)}" target="_blank" rel="noopener">${fmtP(num)}</a></p>
+    <button class="heart" type="button" data-fav="${l.id}" aria-pressed="${favs.has(l.id)}" aria-label="Add to favourites">${HEART}</button>
+  </article>`;
+}
+function render(){
+  const inFav=tab==='fav';
+  $('filters').hidden=inFav;
+  document.querySelector('.status').style.display=inFav&&!favs.size?'none':'';
+  $('tabAll').setAttribute('aria-selected',!inFav);$('tabFav').setAttribute('aria-selected',inFav);
+  $('nAll').textContent=D.length;$('nFav').textContent=favs.size;
+  const list=D.filter(l=>inFav?favs.has(l.id):match(l)).sort(cmp[$('sort').value]);
+  $('count').textContent=list.length+(list.length===1?' home':' homes');
+  const active=!inFav&&fields.some(f=>$(f).value);
+  $('clear').hidden=!active;
+  $('grid').innerHTML=list.map(card).join('');
+  $('empty').hidden=list.length>0;
+  $('empty').textContent=inFav?'No favourites yet. Tap the heart on a home to save it here.':'No homes match. Try a higher budget or fewer filters.';
+}
+function toggleFav(id){favs.has(id)?favs.delete(id):favs.add(id);saveFavs();render()}
+
+/* Tabs and filters */
+function setTab(t){tab=t;try{history.replaceState(null,'',t==='fav'?'#favourites':'#')}catch(e){}render();window.scrollTo(0,0)}
+$('tabAll').onclick=()=>setTab('all');$('tabFav').onclick=()=>setTab('fav');
+if(location.hash==='#favourites')tab='fav';
+['rent','dep','size','furn','area','chat','sort'].forEach(i=>$(i).addEventListener('change',render));
+$('q').addEventListener('input',render);
+$('clear').onclick=()=>{fields.forEach(f=>$(f).value='');render()};
+$('grid').addEventListener('click',e=>{
+  const h=e.target.closest('.heart');if(h){toggleFav(h.dataset.fav);return}
+  const o=e.target.closest('.open');if(o)openD(o.dataset.id);
+});
+
+/* Details */
+let cur=null,idx=0;
+function show(i){
+  if(!cur.media.length){$('stage').textContent='No photos';return}
+  idx=(i+cur.media.length)%cur.media.length;const m=cur.media[idx];
+  $('stage').innerHTML=(m.v?`<video src="${full(m)}" poster="${thumb(m)}" controls playsinline preload="metadata"></video>`:`<img src="${full(m)}" alt="Photo ${idx+1} of ${cur.media.length}">`)+(cur.media.length>1?'<button class="nav prev" type="button" aria-label="Previous">‹</button><button class="nav next" type="button" aria-label="Next">›</button>':'');
+  $('strip').querySelectorAll('button').forEach((b,n)=>{b.setAttribute('aria-current',n===idx);if(n===idx)b.scrollIntoView({block:'nearest',inline:'center'})});
+}
+function info(){
+  const l=cur,num=l.owner||l.phone,posted=l.posts>1?`${l.firstD}, reposted, last on ${l.lastD}`:l.firstD;
+  const rows=[['Deposit',(l.dep==null?'Not stated':'₹'+inr(l.dep)+(l.months?' ('+l.months+' months)':''))+(l.neg?', negotiable':'')]];
+  if(l.broker)rows.push(['Brokerage',l.broker]);
+  if(l.incl)rows.push(['Maintenance','Included in rent']);
+  rows.push(['Posted',posted]);
+  if(l.final)rows.push(['Shortlist','In your House hunting final ones group']);
+  $('info').innerHTML=`<button class="x" type="button" aria-label="Close">×</button>
+    <h2>₹${inr(l.rent)} <small>a month</small></h2>
+    <p style="font-weight:500;margin-top:6px">${esc(title(l))}</p>
+    <p>${esc(l.place)}</p>
+    <div class="actions">
+      <a class="btn main" href="${wa(num)}" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="btn" href="tel:+91${num}">Call</a>
+      ${l.map?`<a class="btn" href="${esc(l.map)}" target="_blank" rel="noopener">Map</a>`:''}
+      <button class="like" type="button" aria-pressed="${favs.has(l.id)}">${HEART}${favs.has(l.id)?'Saved':'Save'}</button>
+    </div>
+    <div class="contact">
+      ${l.owner?`<p>Owner <strong>${fmtP(l.owner)}</strong></p>`:''}
+      <p>${l.owner?'Listed by':'Contact'} ${esc(l.contact)} <strong>${fmtP(l.phone)}</strong></p>
+      <p style="color:var(--mute)">From chat: ${esc(l.source)}</p>
+    </div>
+    ${l.note?`<p class="note">${esc(l.note)}</p>`:''}
+    <dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>
+    <details><summary>Original message</summary><p class="post">${esc(l.text)}</p></details>`;
+}
+function openD(id){
+  cur=D.find(l=>l.id===id);
+  $('strip').innerHTML=cur.media.map((m,n)=>`<button type="button" data-n="${n}" aria-label="Show item ${n+1}"><img loading="lazy" src="${thumb(m)}" alt="">${m.v?'<span>▶</span>':''}</button>`).join('');
+  info();$('stage').innerHTML='';$('dlg').showModal();show(0);$('info').scrollTop=0;
+}
+$('stage').addEventListener('click',e=>{if(e.target.classList.contains('prev'))show(idx-1);if(e.target.classList.contains('next'))show(idx+1)});
+$('strip').addEventListener('click',e=>{const b=e.target.closest('button');if(b)show(+b.dataset.n)});
+$('info').addEventListener('click',e=>{
+  if(e.target.classList.contains('x'))$('dlg').close();
+  if(e.target.closest('.like')){toggleFav(cur.id);info()}
+});
+$('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))$('dlg').close()});
+$('dlg').addEventListener('close',()=>{$('stage').innerHTML=''});
+document.addEventListener('keydown',e=>{if(!$('dlg').open||!cur||cur.media.length<2)return;if(e.key==='ArrowLeft')show(idx-1);if(e.key==='ArrowRight')show(idx+1)});
+render();
+})();
+</script>
+</body>
+</html>
