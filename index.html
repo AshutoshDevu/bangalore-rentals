@@ -223,7 +223,8 @@ const inr=n=>Number(n).toLocaleString('en-IN');
 const money=n=>n>=100000?(n/100000).toString()+'L':(n/1000).toString()+'k';
 const bhk=b=>b==null?'Flat':b==='rk'?'1 RK':b==='room'?'Room':b+' BHK';
 const furnL={semi:'semi-furnished',full:'fully furnished'};
-const title=l=>l.bhk==='room'?'Furnished room in a shared flat':bhk(l.bhk)+(l.furn?' '+furnL[l.furn]:'')+(l.bhk==null?', size not stated':'')+(l.type==='lease'?' on lease':'');
+const joinOr=a=>a.length>1?a.slice(0,-1).join(', ')+' or '+a[a.length-1]:a[0];
+const title=l=>l.units&&l.units.length>1?(()=>{const b=[...new Set(l.units.map(u=>u.bhk))],f=[...new Set(l.units.map(u=>u.furn))];return joinOr(b.map(x=>x==null?'Flat':String(x)))+' BHK'+(f.every(Boolean)?(f.length>1?', semi or fully furnished':' '+furnL[f[0]]):'')})():l.bhk==='room'?'Furnished room in a shared flat':bhk(l.bhk)+(l.furn?' '+furnL[l.furn]:'')+(l.bhk==null?', size not stated':'')+(l.type==='lease'?' on lease':'');
 const fmtP=p=>'+91 '+p.slice(0,5)+' '+p.slice(5);
 const wa=p=>'https://wa.me/91'+p;
 const thumb=m=>'media/t/'+m.f.replace(/\.mp4$/,'.jpg'),full=m=>'media/'+m.f;
@@ -238,6 +239,11 @@ const removeAfter=(a,el,ms)=>{const go=()=>el.remove();a.onfinish=go;setTimeout(
 let favs=new Set();
 try{favs=new Set(JSON.parse(localStorage.getItem('rental-favourites')||'[]'))}catch(e){}
 function saveFavs(){try{localStorage.setItem('rental-favourites',JSON.stringify([...favs]))}catch(e){}}
+D.forEach(l=>(l.aliases||[]).forEach(a=>{if(favs.has(a)){favs.delete(a);favs.add(l.id);saveFavs()}}));
+const unitsOf=l=>l.units||[l];
+const allContacts=l=>[{contact:l.contact,phone:l.phone,source:l.source}].concat(l.also||[]);
+const rentText=l=>{const r=unitsOf(l).map(u=>u.rent),a=Math.min(...r),b=Math.max(...r);return a===b?'₹'+inr(a):'₹'+inr(a)+' to '+inr(b)};
+const unitTitle=u=>bhk(u.bhk)+(u.furn?' '+furnL[u.furn]:'');
 
 /* Filter options */
 const opt=(v,t)=>`<option value="${esc(v)}">${esc(t)}</option>`;
@@ -247,24 +253,29 @@ $('size').innerHTML=opt('','Any size')+[['rk','1 RK'],['1','1 BHK'],['2','2 BHK'
 $('furn').innerHTML=opt('','Any furnishing')+opt('semi','Semi-furnished')+opt('full','Fully furnished')+opt('none','Not stated');
 const locsOf=z=>[...new Set(D.filter(l=>l.zone===z).map(l=>l.loc))].sort();
 $('area').innerHTML=opt('','All areas')+Object.keys(Z).filter(z=>D.some(l=>l.zone===z)).map(z=>`<optgroup label="${esc(Z[z])}">${opt('z:'+z,'All of this area')}${locsOf(z).map(l=>opt('l:'+l,l)).join('')}</optgroup>`).join('');
-$('chat').innerHTML=opt('','All chats')+[...new Set(D.map(l=>l.source))].sort().map(s=>opt(s,s)).join('');
+$('chat').innerHTML=opt('','All chats')+[...new Set(D.flatMap(l=>allContacts(l).map(c=>c.source)))].sort().map(s=>opt(s,s)).join('');
 
 const fields=['rent','dep','size','furn','area','chat','q'];
 let tab='all';
 function match(l){
   const r=$('rent').value,d=$('dep').value,s=$('size').value,f=$('furn').value,a=$('area').value,c=$('chat').value,q=$('q').value.trim().toLowerCase();
-  if(r&&l.rent>+r)return false;
-  if(d&&l.dep!=null&&l.dep>+d)return false;
-  if(s&&(s==='none'?l.bhk!=null:String(l.bhk)!==s))return false;
-  if(f&&(f==='none'?l.furn!=null:l.furn!==f))return false;
+  const fits=unitsOf(l).some(u=>{
+    if(r&&u.rent>+r)return false;
+    if(d&&u.dep!=null&&u.dep>+d)return false;
+    if(s&&(s==='none'?u.bhk!=null:String(u.bhk)!==s))return false;
+    if(f&&(f==='none'?u.furn!=null:u.furn!==f))return false;
+    return true;
+  });
+  if(!fits)return false;
   if(a&&(a[0]==='z'?l.zone!==a.slice(2):l.loc!==a.slice(2)))return false;
-  if(c&&l.source!==c)return false;
-  if(q&&!(l.place+' '+l.text+' '+l.source+' '+l.contact+' '+l.phone).toLowerCase().includes(q))return false;
+  if(c&&!allContacts(l).some(x=>x.source===c))return false;
+  if(q&&!(l.place+' '+l.text+' '+allContacts(l).map(x=>x.source+' '+x.contact+' '+x.phone).join(' ')).toLowerCase().includes(q))return false;
   return true;
 }
 const cmp={new:(a,b)=>b.last-a.last,rent:(a,b)=>a.rent-b.rent,dep:(a,b)=>(a.dep==null?1e12:a.dep)-(b.dep==null?1e12:b.dep)};
 function moneyLine(l){
-  const b=[l.dep==null?'Deposit not stated':'Deposit ₹'+money(l.dep)];
+  const ds=unitsOf(l).map(u=>u.dep).filter(x=>x!=null),lo=Math.min(...ds),hi=Math.max(...ds);
+  const b=[!ds.length?'Deposit not stated':lo===hi?'Deposit ₹'+money(lo):'Deposit ₹'+money(lo)+' to ₹'+money(hi)];
   if(l.broker)b.push('brokerage '+(l.broker==='Applicable'?'applies':l.broker));
   return b.join(', ');
 }
@@ -283,12 +294,12 @@ function makeCard(l){
   el.className='card';el.dataset.id=l.id;
   el.innerHTML=`<button class="open" type="button">
       <span class="pic">${l.media.length?`<img loading="lazy" src="${thumb(l.media[0])}" alt=""><span class="tally">${tally(l)}</span>`:'<span class="nopic">No photos</span>'}</span>
-      <span class="rent">₹${inr(l.rent)} <small>a month</small></span>
+      <span class="rent">${rentText(l)} <small>a month</small></span>
       <span class="what">${esc(title(l))}</span>
       <span class="place">${esc(l.place)}</span>
       <span class="money">${esc(moneyLine(l))}</span>
     </button>
-    <p class="who">${esc(l.source)}<br>${l.owner?'Owner ':esc(l.contact)+' '}<a href="${wa(num)}" target="_blank" rel="noopener">${fmtP(num)}</a></p>
+    <p class="who">${esc(l.source)}<br>${l.owner?'Owner ':esc(l.contact)+' '}<a href="${wa(num)}" target="_blank" rel="noopener">${fmtP(num)}</a>${l.also?`<br>${l.also.map(a=>`${esc(a.contact)} <a href="${wa(a.phone)}" target="_blank" rel="noopener">${fmtP(a.phone)}</a>`).join('<br>')}`:''}</p>
     <button class="heart" type="button" aria-pressed="${favs.has(l.id)}" aria-label="${heartLabel(l.id)}">${HEART}</button>`;
   const img=el.querySelector('img');
   if(img){const on=()=>img.classList.add('in');img.complete&&img.naturalWidth?on():img.addEventListener('load',on,{once:true})}
@@ -451,13 +462,15 @@ function show(i,dir){
 }
 function buildInfo(){
   const l=cur,num=l.owner||l.phone,posted=l.posts>1?`${l.firstD}, reposted, last on ${l.lastD}`:l.firstD;
-  const rows=[['Deposit',(l.dep==null?'Not stated':'₹'+inr(l.dep)+(l.months?' ('+l.months+' months)':''))+(l.neg?', negotiable':'')]];
+  const rows=[];
+  if(l.units&&l.units.length>1)l.units.forEach(u=>rows.push([unitTitle(u),'₹'+inr(u.rent)+' a month, deposit '+(u.dep==null?'not stated':'₹'+inr(u.dep)+(u.months?' ('+u.months+' months)':''))]));
+  else rows.push(['Deposit',(l.dep==null?'Not stated':'₹'+inr(l.dep)+(l.months?' ('+l.months+' months)':''))+(l.neg?', negotiable':'')]);
   if(l.broker)rows.push(['Brokerage',l.broker]);
   if(l.incl)rows.push(['Maintenance','Included in rent']);
   rows.push(['Posted',posted]);
   if(l.final)rows.push(['Shortlist','In your House hunting final ones group']);
   $('info').innerHTML=`<button class="x" type="button" aria-label="Close">×</button>
-    <h2>₹${inr(l.rent)} <small>a month</small></h2>
+    <h2>${rentText(l)} <small>a month</small></h2>
     <div><p style="font-weight:500;margin-top:6px">${esc(title(l))}</p><p>${esc(l.place)}</p></div>
     <div class="actions">
       <a class="btn main" href="${wa(num)}" target="_blank" rel="noopener">WhatsApp</a>
@@ -469,6 +482,7 @@ function buildInfo(){
       ${l.owner?`<p>Owner <strong>${fmtP(l.owner)}</strong></p>`:''}
       <p>${l.owner?'Listed by':'Contact'} ${esc(l.contact)} <strong>${fmtP(l.phone)}</strong></p>
       <p style="color:var(--mute)">From chat: ${esc(l.source)}</p>
+      ${(l.also||[]).map(a=>`<p style="margin-top:10px">Also ${esc(a.contact)} <strong>${fmtP(a.phone)}</strong></p><p style="color:var(--mute)">From chat: ${esc(a.source)}</p>`).join('')}
     </div>
     ${l.note?`<p class="note">${esc(l.note)}</p>`:''}
     <dl>${rows.map(r=>`<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join('')}</dl>
